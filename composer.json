@@ -1,0 +1,14 @@
+{
+    "name": "fzed51/tnp-sync",
+    "description": "Surcharge des fonctions de base de PHP avec une synchronisation \u00E0 un service ntp",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Fabien Sanchez",
+            "email": "fzed51+git@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}

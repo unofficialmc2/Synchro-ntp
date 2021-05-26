@@ -1,0 +1,13 @@
+# OS
+#####
+
+# EDI
+######
+/.idea/
+
+# COMPOSER
+###########
+/vendor/
+
+# PROJECT
+##########
