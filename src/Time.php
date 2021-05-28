@@ -111,9 +111,12 @@ class Time
     private static function getDeltaFilename(): string
     {
         $tempDir = sys_get_temp_dir();
+        if (defined('SYNCHRO_NTP_DIRECTORY') && is_dir(SYNCHRO_NTP_DIRECTORY)) {
+            $tempDir = SYNCHRO_NTP_DIRECTORY;
+        }
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         /** @noinspection OneTimeUseVariablesInspection */
-        $filename = $tempDir . DIRECTORY_SEPARATOR . self::DELTA_FILE_NAME;
+        $filename = rtrim($tempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::DELTA_FILE_NAME;
         // error_log($filename);
         return $filename;
     }
