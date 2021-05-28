@@ -31,7 +31,7 @@ class Time
     private static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
     {
         try {
-            $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, (int)$timeout);
+            $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, $timeout);
             if ($socket === false) {
                 throw new Exception("inpossible de se connecter au serveur horloge");
             }
@@ -87,14 +87,17 @@ class Time
     {
         $regexInterval = "/^P(?:-?\d+Y)?(?:-?\d+M)?(?:-?\d+D)?(?:T(?:-?\d+H)?(?:-?\d+M)?(?:-?\d+S)?)?$/";
         $interval = "PT6H";
-        if (
-            defined('SYNCHRO_NTP_INTERVAL')
-            && preg_match(, $regexInterval, SYNCHRO_NTP_INTERVAL) > 0
+        if (defined('SYNCHRO_NTP_INTERVAL')
+            && preg_match($regexInterval, SYNCHRO_NTP_INTERVAL) > 0
         ) {
             $interval = SYNCHRO_NTP_INTERVAL;
         }
         $deltaFile = self::getDeltaFile();
-        $validity = (new PhpDateTime())->sub(new DateInterval(self::DELTA_FILE_VALIDITY));
+        try {
+            $validity = (new PhpDateTime())->sub(new DateInterval($interval));
+        } catch (Exception $e) {
+            throw new RuntimeException("L'interval de validité du delta n'est pas valide");
+        }
         if ($deltaFile === null || $deltaFile->mesuredOn() < $validity) {
             $deltaFile = self::setDeltaFile();
         }
