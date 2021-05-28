@@ -108,7 +108,7 @@ class Time
      * chemin complet vers le fichier où est enregistré le delta
      * @return string
      */
-    private static function getDeltaFileanme(): string
+    private static function getDeltaFilename(): string
     {
         $tempDir = sys_get_temp_dir();
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
@@ -124,7 +124,7 @@ class Time
      */
     private static function getDeltaFile(): ?Delta
     {
-        $deltaFileanme = self::getDeltaFileanme();
+        $deltaFileanme = self::getDeltaFilename();
         if (!is_file($deltaFileanme)) {
             return null;
         }
@@ -150,7 +150,7 @@ class Time
         $local = (float)(($start + $end) / 2);
         $delta = $ntp - $local;
         // enregistrement du delta
-        $deltaFileanme = self::getDeltaFileanme();
+        $deltaFileanme = self::getDeltaFilename();
         file_put_contents($deltaFileanme, $delta);
 
         return new Delta($delta, new DateTime());
@@ -162,6 +162,6 @@ class Time
     protected static function clearCache(): void
     {
         self::$deltaNtp = null;
-        unlink(self::getDeltaFileanme());
+        unlink(self::getDeltaFilename());
     }
 }
