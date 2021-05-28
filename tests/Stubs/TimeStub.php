@@ -16,5 +16,4 @@ class TimeStub extends \SynchroNtp\Time
     {
         parent::clearCache();
     }
-
 }
