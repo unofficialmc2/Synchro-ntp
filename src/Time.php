@@ -167,4 +167,20 @@ class Time
         self::$deltaNtp = null;
         unlink(self::getDeltaFilename());
     }
+
+    /**
+     * retourne les informations
+     * @return array
+     */
+    public static function info(): array
+    {
+        $time = \time();
+        $synchro = self::get();
+        $info = [
+            'time' => $time,
+            'SynchroNtp' => $synchro
+        ];
+        error_log(var_export($info, true));
+        return $info;
+    }
 }
