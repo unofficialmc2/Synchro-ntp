@@ -160,7 +160,7 @@ class Time
         $deltaFileanme = self::getDeltaFilename();
         file_put_contents($deltaFileanme, $delta);
 
-        return new Delta($delta, new DateTime());
+        return new Delta($delta, new PhpDateTime());
     }
 
     /**
@@ -169,7 +169,9 @@ class Time
     protected static function clearCache(): void
     {
         self::$deltaNtp = null;
-        unlink(self::getDeltaFilename());
+        if (is_file(self::getDeltaFilename())) {
+            unlink(self::getDeltaFilename());
+        }
     }
 
     /**
