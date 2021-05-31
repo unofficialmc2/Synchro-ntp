@@ -41,7 +41,8 @@ class Time
             fclose($socket);
             // unpack to unsigned long
             $data = unpack('N12', $response);
-            if ($data === false) {
+            // error_log(var_export($data, true));
+            if ($data === false || !isset($data[9])) {
                 throw new Exception("les données reçus ne sont pas valide");
             }
             // 9 =  Receive Timestamp (rec): Time at the server when the request arrived
@@ -51,6 +52,9 @@ class Time
             // Unix time = seconds since January 1st, 1970
             // remove 70 years in seconds to get unix timestamp from NTP time
             $timestamp -= 2208988800;
+            if ($timestamp <= 0) {
+                throw new Exception("l'heure reçue n'est pas cohérente");
+            }
             return $timestamp;
         } catch (Throwable $t) {
             throw new RuntimeException("Un problème est survenu lors de la récupération de l'heure d'un serveur horloge", $t->getCode(), $t);
