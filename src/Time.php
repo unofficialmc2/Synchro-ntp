@@ -28,7 +28,7 @@ class Time
      * @param int $timeout
      * @return int
      */
-    private static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
+    public static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
     {
         try {
             $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, $timeout);
@@ -92,6 +92,7 @@ class Time
         ) {
             $interval = SYNCHRO_NTP_INTERVAL;
         }
+        // error_log('$interval : ' . $interval);
         $deltaFile = self::getDeltaFile();
         try {
             $validity = (new PhpDateTime())->sub(new DateInterval($interval));
@@ -115,9 +116,8 @@ class Time
             $tempDir = SYNCHRO_NTP_DIRECTORY;
         }
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
-        /** @noinspection OneTimeUseVariablesInspection */
         $filename = rtrim($tempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::DELTA_FILE_NAME;
-        // error_log($filename);
+        //error_log($filename);
         return $filename;
     }
 
@@ -170,17 +170,22 @@ class Time
 
     /**
      * retourne les informations
-     * @return array
+     * @return array<string,mixed>
      */
     public static function info(): array
     {
         $time = \time();
         $synchro = self::get();
+        $delta = self::getDeltaFile();
+        $delta = $delta === null
+            ? $delta
+            : ['value' => $delta->value(), 'mesuredOn' => $delta->mesuredOn()->format(DATE_ATOM)];
         $info = [
             'time' => $time,
-            'SynchroNtp' => $synchro
+            'SynchroNtp' => $synchro,
+            'delta' => $delta
         ];
-        error_log(var_export($info, true));
+        //error_log(var_export($info, true));
         return $info;
     }
 }
