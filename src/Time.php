@@ -28,7 +28,7 @@ class Time
      * @param int $timeout
      * @return int
      */
-    private static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
+    public static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
     {
         try {
             $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, $timeout);
@@ -41,7 +41,8 @@ class Time
             fclose($socket);
             // unpack to unsigned long
             $data = unpack('N12', $response);
-            if ($data === false) {
+            // error_log(var_export($data, true));
+            if ($data === false || !isset($data[9])) {
                 throw new Exception("les données reçus ne sont pas valide");
             }
             // 9 =  Receive Timestamp (rec): Time at the server when the request arrived
@@ -51,6 +52,9 @@ class Time
             // Unix time = seconds since January 1st, 1970
             // remove 70 years in seconds to get unix timestamp from NTP time
             $timestamp -= 2208988800;
+            if ($timestamp <= 0) {
+                throw new Exception("l'heure reçue n'est pas cohérente");
+            }
             return $timestamp;
         } catch (Throwable $t) {
             throw new RuntimeException("Un problème est survenu lors de la récupération de l'heure d'un serveur horloge", $t->getCode(), $t);
@@ -92,6 +96,7 @@ class Time
         ) {
             $interval = SYNCHRO_NTP_INTERVAL;
         }
+        // error_log('$interval : ' . $interval);
         $deltaFile = self::getDeltaFile();
         try {
             $validity = (new PhpDateTime())->sub(new DateInterval($interval));
@@ -108,13 +113,15 @@ class Time
      * chemin complet vers le fichier où est enregistré le delta
      * @return string
      */
-    private static function getDeltaFileanme(): string
+    private static function getDeltaFilename(): string
     {
         $tempDir = sys_get_temp_dir();
+        if (defined('SYNCHRO_NTP_DIRECTORY') && is_dir(SYNCHRO_NTP_DIRECTORY)) {
+            $tempDir = SYNCHRO_NTP_DIRECTORY;
+        }
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
-        /** @noinspection OneTimeUseVariablesInspection */
-        $filename = $tempDir . DIRECTORY_SEPARATOR . self::DELTA_FILE_NAME;
-        // error_log($filename);
+        $filename = rtrim($tempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::DELTA_FILE_NAME;
+        //error_log($filename);
         return $filename;
     }
 
@@ -124,7 +131,7 @@ class Time
      */
     private static function getDeltaFile(): ?Delta
     {
-        $deltaFileanme = self::getDeltaFileanme();
+        $deltaFileanme = self::getDeltaFilename();
         if (!is_file($deltaFileanme)) {
             return null;
         }
@@ -150,7 +157,7 @@ class Time
         $local = (float)(($start + $end) / 2);
         $delta = $ntp - $local;
         // enregistrement du delta
-        $deltaFileanme = self::getDeltaFileanme();
+        $deltaFileanme = self::getDeltaFilename();
         file_put_contents($deltaFileanme, $delta);
 
         return new Delta($delta, new DateTime());
@@ -162,6 +169,27 @@ class Time
     protected static function clearCache(): void
     {
         self::$deltaNtp = null;
-        unlink(self::getDeltaFileanme());
+        unlink(self::getDeltaFilename());
+    }
+
+    /**
+     * retourne les informations
+     * @return array<string,mixed>
+     */
+    public static function info(): array
+    {
+        $time = \time();
+        $synchro = self::get();
+        $delta = self::getDeltaFile();
+        $delta = $delta === null
+            ? $delta
+            : ['value' => $delta->value(), 'mesuredOn' => $delta->mesuredOn()->format(DATE_ATOM)];
+        $info = [
+            'time' => $time,
+            'SynchroNtp' => $synchro,
+            'delta' => $delta
+        ];
+        //error_log(var_export($info, true));
+        return $info;
     }
 }

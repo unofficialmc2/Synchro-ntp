@@ -17,11 +17,13 @@ class TimeTest extends TestCase
      */
     public function testGet(): void
     {
-        self::assertLessThanOrEqual(1, \time() - Time::get());
+        self::assertLessThanOrEqual(1, abs(
+            Time::getTimeFromNTP('ntp.unice.fr', 1) - Time::get()
+        ));
     }
 
     /**
-     *
+     * test du cache
      */
     public function testCache(): void
     {
@@ -35,5 +37,17 @@ class TimeTest extends TestCase
         TimeStub::get();
         $ts = TimeStub::get();
         self::assertIsInt($ts);
+    }
+
+    /**
+     * test de info
+     */
+    public function testInfos():void
+    {
+        $infos = Time::info();
+        self::assertIsArray($infos);
+        foreach (['time', 'SynchroNtp', 'delta'] as $key) {
+            self::assertArrayHasKey($key, $infos);
+        }
     }
 }

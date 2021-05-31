@@ -12,3 +12,4 @@
 # PROJECT
 ##########
 /.phpunit.result.cache
+/tests/SynchroNtp_delta
