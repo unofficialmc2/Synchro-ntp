@@ -24,6 +24,7 @@ class Time
      * GitHub Gist
      * bohwaz/get_time_from_ntp.php
      * @link  https://gist.github.com/bohwaz/6d01bf00fdb4721a601c4b9fc1007d81
+     * fonction modifiée pour fonctionner dans une architecture 32bit
      * @param string $host
      * @param int $timeout
      * @return int
@@ -47,11 +48,17 @@ class Time
             }
             // 9 =  Receive Timestamp (rec): Time at the server when the request arrived
             // from the client, in NTP timestamp format.
-            $timestamp = (int)sprintf('%u', $data[9]);
+            $timestamp = sprintf('%u', $data[9]);
+            // Avec une version 32bit de php le timestamp est negatif ($timestamp > PHP_INT_MAX)
+            if ($timestamp < 0) {
+                // on ajoute 2
+                $timestamp += (double)4294967296;
+            }
             // NTP = number of seconds since January 1st, 1900
             // Unix time = seconds since January 1st, 1970
             // remove 70 years in seconds to get unix timestamp from NTP time
             $timestamp -= 2208988800;
+            $timestamp = (int)$timestamp;
             if ($timestamp <= 0) {
                 throw new Exception("l'heure reçue n'est pas cohérente");
             }
