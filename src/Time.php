@@ -7,6 +7,7 @@ use DateInterval;
 use DateTime as PhpDateTime;
 use Exception;
 use RuntimeException;
+use SynchroNtp\Exceptions\SynchroNtpException;
 use Throwable;
 
 /**
@@ -24,6 +25,7 @@ class Time
      * GitHub Gist
      * bohwaz/get_time_from_ntp.php
      * @link  https://gist.github.com/bohwaz/6d01bf00fdb4721a601c4b9fc1007d81
+     * fonction modifiée pour gérer les erreurs
      * fonction modifiée pour fonctionner dans une architecture 32bit
      * @param string $host
      * @param int $timeout
@@ -32,9 +34,13 @@ class Time
     public static function getTimeFromNTP(string $host = 'pool.ntp.org', int $timeout = 10): int
     {
         try {
-            $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, $timeout);
+            try {
+                $socket = stream_socket_client('udp://' . $host . ':123', $errno, $errstr, $timeout);
+            } catch (Throwable $t) {
+                throw new SynchroNtpException("impossible de se connecter au serveur horloge");
+            }
             if ($socket === false) {
-                throw new Exception("inpossible de se connecter au serveur horloge");
+                throw new SynchroNtpException("impossible d'établir une connexion avec le serveur horloge");
             }
             $msg = "\010" . str_repeat("\0", 47);
             fwrite($socket, $msg);
@@ -44,14 +50,13 @@ class Time
             $data = unpack('N12', $response);
             // error_log(var_export($data, true));
             if ($data === false || !isset($data[9])) {
-                throw new Exception("les données reçus ne sont pas valide");
+                throw new SynchroNtpException("les données reçus ne sont pas valide");
             }
             // 9 =  Receive Timestamp (rec): Time at the server when the request arrived
             // from the client, in NTP timestamp format.
             $timestamp = sprintf('%u', $data[9]);
             // Avec une version 32bit de php le timestamp est negatif ($timestamp > PHP_INT_MAX)
             if ($timestamp < 0) {
-                // on ajoute 2
                 $timestamp += (double)4294967296;
             }
             // NTP = number of seconds since January 1st, 1900
@@ -60,10 +65,15 @@ class Time
             $timestamp -= 2208988800;
             $timestamp = (int)$timestamp;
             if ($timestamp <= 0) {
-                throw new Exception("l'heure reçue n'est pas cohérente");
+                throw new SynchroNtpException("l'heure reçue n'est pas cohérente");
             }
             return $timestamp;
         } catch (Throwable $t) {
+            /** @[//]noinspection ForgottenDebugOutputInspection */
+            // error_log("[ERROR] (" . get_class($t) . ') ' . $t->getMessage());
+            if (SynchroNtpException::class === get_class($t)) {
+                throw new RuntimeException("Un problème est survenu lors de la récupération de l'heure d'un serveur horloge, " . $t->getMessage(), $t->getCode(), $t);
+            }
             throw new RuntimeException("Un problème est survenu lors de la récupération de l'heure d'un serveur horloge", $t->getCode(), $t);
         }
     }
@@ -71,6 +81,7 @@ class Time
     /**
      * retourne le timestamp UNIX synchro avec les serveur NTP
      * @return int
+     * @throws \SynchroNtp\Exceptions\SynchroNtpException
      */
     public static function get(): int
     {
@@ -81,6 +92,7 @@ class Time
      * retourne le delta enregistré dans la mémoire
      * sinon, celui enregistré dans le fichier
      * @return float
+     * @throws \SynchroNtp\Exceptions\SynchroNtpException
      */
     private static function getDeltaCachedMemory(): float
     {
@@ -93,6 +105,7 @@ class Time
     /**
      * retourne le delta enregistré dans le fichier de cache
      * @return float
+     * @throws \SynchroNtp\Exceptions\SynchroNtpException
      */
     private static function getDeltaCachedFile(): float
     {
@@ -108,7 +121,7 @@ class Time
         try {
             $validity = (new PhpDateTime())->sub(new DateInterval($interval));
         } catch (Exception $e) {
-            throw new RuntimeException("L'interval de validité du delta n'est pas valide");
+            throw new SynchroNtpException("l'interval de validité du delta n'est pas valide");
         }
         if ($deltaFile === null || $deltaFile->mesuredOn() < $validity) {
             $deltaFile = self::setDeltaFile();
