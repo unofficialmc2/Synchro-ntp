@@ -1,12 +1,12 @@
 {
-  "name": "fzed51/synchr-ntp",
+  "name": "unofficialmc2/synchr-ntp",
   "description": "Surcharge des fonctions de base de PHP avec une synchronisation \u00e0 un service ntp",
   "type": "library",
   "license": "MIT",
   "authors": [
     {
       "name": "Fabien Sanchez",
-      "email": "fzed51+git@gmail.com"
+      "email": "fabien.sanchez@arche-mc2.fr"
     }
   ],
   "minimum-stability": "stable",
